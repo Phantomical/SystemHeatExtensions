@@ -1,0 +1,20 @@
+{
+    "spec_version": "v1.6",
+    "identifier": "ActiveHeatshields-Dependencies-1",
+    "name": "ActiveHeatshields Dependency Set 1",
+    "abstract": "Dependencies required to do development for ActiveHeatshields",
+    "author": "steamroller",
+    "version": "1",
+    "ksp_version_min": "1.8",
+    "ksp_version_max": "1.12",
+    "license": "MIT",
+    "kind": "metapackage",
+    "depends": [
+        { "name": "Harmony2" },
+        { "name": "SystemHeat" }
+    ],
+    "recommends": [
+        { "name": "KSPCommunityFixes" },
+        { "name": "QuickStart" }
+    ]
+}
