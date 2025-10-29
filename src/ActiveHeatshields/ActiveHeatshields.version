@@ -1,0 +1,25 @@
+{
+    "NAME": "ActiveHeatshields",
+    "URL": "https://github.com/Phantomical/ActiveHeatshields/releases/latest/download/ActiveHeatshields.version",
+    "DOWNLOAD": "https://github.com/Phantomical/ActiveHeatshields/releases",
+    "GITHUB": {
+        "USERNAME": "Phantomical",
+        "REPOSITORY": "ActiveHeatshields"
+    },
+    "VERSION": {},
+    "KSP_VERSION": {
+        "MAJOR": 1,
+        "MINOR": 12,
+        "PATCH": 5
+    },
+    "KSP_VERSION_MIN": {
+        "MAJOR": 1,
+        "MINOR": 12,
+        "PATCH": 5
+    },
+    "KSP_VERSION_MAX": {
+        "MAJOR": 1,
+        "MINOR": 12,
+        "PATCH": 99
+    }
+}

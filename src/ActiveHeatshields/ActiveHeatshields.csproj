@@ -16,6 +16,14 @@
       <KSPAssemblyVersion>1.0.0</KSPAssemblyVersion>
     </Reference>
 
+    <Reference Include="SystemHeat.dll">
+      <HintPath>$(DepSet1)\SystemHeat\Plugin\SystemHeat.dll</HintPath>
+      <Private>false</Private>
+      <CKANIdentifier>SystemHeat</CKANIdentifier>
+      <KSPAssemblyName>SystemHeat</KSPAssemblyName>
+      <KSPAssemblyVersion>0.0.0</KSPAssemblyVersion>
+    </Reference>
+
     <KSPVersionFile Include=".">
       <Destination>$(GameDataOutDir)/ActiveHeatshields.version</Destination>
       <URL>
