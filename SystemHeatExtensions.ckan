@@ -9,3 +9,5 @@ depends:
     min_version: 4.2.3
   - name: Harmony2
     min_version: 2.2.1
+  - name: SolverEngines
+    min_version: 3.14

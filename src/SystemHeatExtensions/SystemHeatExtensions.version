@@ -1,10 +1,10 @@
 {
-    "NAME": "ActiveHeatshields",
-    "URL": "https://github.com/Phantomical/ActiveHeatshields/releases/latest/download/ActiveHeatshields.version",
-    "DOWNLOAD": "https://github.com/Phantomical/ActiveHeatshields/releases",
+    "NAME": "SystemHeatExtensions",
+    "URL": "https://github.com/Phantomical/SystemHeatExtensions/releases/latest/download/SystemHeatExtensions.version",
+    "DOWNLOAD": "https://github.com/Phantomical/SystemHeatExtensions/releases",
     "GITHUB": {
         "USERNAME": "Phantomical",
-        "REPOSITORY": "ActiveHeatshields"
+        "REPOSITORY": "SystemHeatExtensions"
     },
     "VERSION": {},
     "KSP_VERSION": {

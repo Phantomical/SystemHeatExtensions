@@ -38,13 +38,13 @@
     </Reference>
 
     <KSPVersionFile Include=".">
-      <Destination>$(GameDataOutDir)/ActiveHeatshields.version</Destination>
+      <Destination>$(GameDataOutDir)/SystemHeatExtensions.version</Destination>
       <URL>
-        https://github.com/Phantomical/ActiveHeatshields/releases/latest/download/ActiveHeatshields.version</URL>
-      <Download>https://github.com/Phantomical/ActiveHeatshields/releases/latest</Download>
+        https://github.com/Phantomical/SystemHeatExtensions/releases/latest/download/SystemHeatExtensions.version</URL>
+      <Download>https://github.com/Phantomical/SystemHeatExtensions/releases/latest</Download>
     </KSPVersionFile>
 
-    <InternalsVisibleTo Include="ActiveHeatshields.Kerbalism" />
+    <InternalsVisibleTo Include="SystemHeatExtensions.Kerbalism" />
   </ItemGroup>
 
   <ItemGroup>

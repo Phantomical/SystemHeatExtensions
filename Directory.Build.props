@@ -27,7 +27,7 @@
         <!-- <DefineConstants>DEBUG;SOLVERTRACE</DefineConstants> -->
 
         <!-- Properties used by KSPBuildTools -->
-        <GameDataSubDir>ActiveHeatshields</GameDataSubDir>
+        <GameDataSubDir>SystemHeatExtensions</GameDataSubDir>
         <GameDataOutDir>$(ProjectRootDir)\GameData\$(GameDataSubDir)</GameDataOutDir>
         <BinariesOutputRelativePath>GameData\$(GameDataSubDir)\Plugins</BinariesOutputRelativePath>
     </PropertyGroup>
@@ -43,7 +43,7 @@
     -->
     <PropertyGroup Condition=" '$(SolutionDir)' == '' ">
         <SolutionDir>$(ProjectRootDir)</SolutionDir>
-        <SolutionName>ActiveHeatshields</SolutionName>
+        <SolutionName>SystemHeatExtensions</SolutionName>
         <SolutionExt>.sln</SolutionExt>
         <SolutionFileName>$(SolutionName)$(SolutionExt)</SolutionFileName>
         <SolutionPath>$(SolutionDir)/$(SolutionFileName)</SolutionPath>
