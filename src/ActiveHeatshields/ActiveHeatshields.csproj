@@ -8,6 +8,11 @@
   <ItemGroup>
     <PackageReference Include="JsonPoke" Version="1.2.0" />
 
+    <PackageReference Include="Krafs.Publicizer" Version="2.3.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+
     <Reference Include="0Harmony.dll">
       <HintPath>$(DepSet1)\000_Harmony\0Harmony.dll</HintPath>
       <Private>false</Private>
@@ -24,6 +29,14 @@
       <KSPAssemblyVersion>0.0.0</KSPAssemblyVersion>
     </Reference>
 
+    <Reference Include="SolverEngines">
+      <HintPath>$(DepSet1)\SolverEngines\Plugins\SolverEngines.dll</HintPath>
+      <Private>false</Private>
+      <CKANIdentifier>SolverEngines</CKANIdentifier>
+      <KSPAssemblyName>SolverEngines</KSPAssemblyName>
+      <KSPAssemblyVersion>3.13.0</KSPAssemblyVersion>
+    </Reference>
+
     <KSPVersionFile Include=".">
       <Destination>$(GameDataOutDir)/ActiveHeatshields.version</Destination>
       <URL>
@@ -32,6 +45,10 @@
     </KSPVersionFile>
 
     <InternalsVisibleTo Include="ActiveHeatshields.Kerbalism" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Publicize Include="Assembly-CSharp" />
   </ItemGroup>
 
   <!--

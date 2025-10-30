@@ -3,8 +3,18 @@ using SystemHeat;
 
 namespace ActiveHeatshields;
 
-public class ModuleActiveHeatCollector : PartModule, IAnalyticTemperatureModifier
+/// <summary>
+/// This module exchanges heat between a SystemHeat loop and optionally, either
+/// the internal or skin temperature of a part.
+/// </summary>
+public class ModuleHeatExchanger : PartModule, IAnalyticTemperatureModifier
 {
+    public enum HeatSource
+    {
+        SKIN,
+        INTERNAL,
+    }
+
     /// <summary>
     /// A unique identifier.
     /// </summary>
@@ -23,7 +33,7 @@ public class ModuleActiveHeatCollector : PartModule, IAnalyticTemperatureModifie
     /// temperature of the part, instead of the skin temperature.
     /// </summary>
     [KSPField]
-    public bool isInternal = false;
+    public HeatSource heatSource = HeatSource.SKIN;
 
     /// <summary>
     /// The rate at which heat can be transferred between the part's skin and
@@ -77,7 +87,7 @@ public class ModuleActiveHeatCollector : PartModule, IAnalyticTemperatureModifie
         double temp;
         if (HighLogic.LoadedSceneIsEditor)
             temp = simulationTemp;
-        else if (isInternal)
+        else if (heatSource == HeatSource.INTERNAL)
             temp = part.temperature;
         else
             temp = part.skinTemperature;
@@ -91,7 +101,7 @@ public class ModuleActiveHeatCollector : PartModule, IAnalyticTemperatureModifie
         heatModule.AddFlux(moduleID, (float)temp, (float)flux, false);
         if (!HighLogic.LoadedSceneIsEditor)
         {
-            if (isInternal)
+            if (heatSource == HeatSource.INTERNAL)
                 part.AddThermalFlux(-flux);
             else
                 part.AddExposedThermalFlux(-flux);

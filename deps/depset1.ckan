@@ -11,7 +11,8 @@
     "kind": "metapackage",
     "depends": [
         { "name": "Harmony2" },
-        { "name": "SystemHeat" }
+        { "name": "SystemHeat" },
+        { "name": "SolverEngines" }
     ],
     "recommends": [
         { "name": "KSPCommunityFixes" },
