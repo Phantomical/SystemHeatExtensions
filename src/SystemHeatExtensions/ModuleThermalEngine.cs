@@ -57,204 +57,6 @@ public struct ThermalPropellant() : IConfigNode
     }
 }
 
-public class ThermalEngineSolver : EngineSolver
-{
-    const double G = 9.80665f;
-
-    public ModuleSystemHeat HeatModule;
-    public string ModuleID;
-
-    public FloatCurve TemperatureIspCurve;
-    public FloatCurve AtmosphereCurve;
-    public FloatCurve AtmCurve;
-    public FloatCurve VelCurveIsp;
-    public FloatCurve VelCurve;
-    public FloatCurve AtmCurveIsp;
-    public FloatCurve ThrottleIspCurve;
-    public FloatCurve ThrottleIspCurveAtmStrength;
-    public FloatCurve ThrustCurve;
-
-    public double HeatTransferEfficiency;
-    public double MinOperatingTemperature;
-    public double MaxOperatingTemperature;
-
-    public double MixtureSpecificHeatCapacity;
-    public double MixtureInitialTemperature;
-    public double MixtureVaporizationCost;
-
-    public bool DisableUnderwater;
-    public double MaxFuelFlow;
-    public double MinFuelFlow;
-    public double FlowMultCap;
-    public double FlowMultCapSharpness;
-
-    public double ExhaustTemperature;
-    public double LoopFlux;
-
-    public override void CalculatePerformance(
-        double airRatio,
-        double throttle,
-        double flowMult,
-        double ispMult
-    )
-    {
-        ExhaustTemperature = 0.0;
-        LoopFlux = 0.0;
-
-        base.CalculatePerformance(airRatio, throttle, flowMult, ispMult);
-
-        CalculateExhaustTemperature();
-        CalculateIsp(throttle, ispMult);
-
-        statusString = Localizer.GetStringByTag("#LOC_SHX_ThermalNozzle_Nominal");
-
-        if (throttle <= 0.0)
-        {
-            running = false;
-            return;
-        }
-
-        if (HeatModule.LoopTemperature < MinOperatingTemperature)
-        {
-            running = false;
-            statusString = Localizer.GetStringByTag("#LOC_SHX_ThermalNozzle_TempTooLow");
-            return;
-        }
-
-        if (HeatModule.LoopTemperature > MaxOperatingTemperature)
-        {
-            running = false;
-            statusString = Localizer.GetStringByTag("#LOC_SHX_ThermalNozzle_TempTooHigh");
-            return;
-        }
-
-        if (ffFraction <= 0.0)
-        {
-            statusString = Localizer.GetStringByTag("#LOC_SHX_ThermalNozzle_NoPropellants");
-            return;
-        }
-
-        if (DisableUnderwater && underwater)
-        {
-            running = false;
-            statusString = Localizer.GetStringByTag("#LOC_SHX_ThermalNozzle_Underwater");
-            return;
-        }
-
-        CalculateFuelFlow(throttle, flowMult);
-
-        if (fuelFlow < MinFuelFlow)
-        {
-            fuelFlow = 0.0;
-            running = false;
-            statusString = Localizer.GetStringByTag("#LOC_SHX_ThermalNozzle_AirflowOutsideSpecs");
-            return;
-        }
-
-        CalculateThrust();
-    }
-
-    void CalculateIsp(double throttle, double ispMult)
-    {
-        double atm = p0 * 0.001 * PhysicsGlobals.KpaToAtmospheres;
-        double isp = AtmosphereCurve.Evaluate((float)atm) * ispMult;
-        isp *= GetThrottlingMult(atm, throttle);
-        isp *= AtmCurveIsp?.Evaluate((float)(rho * (1.0 / 1.225))) ?? 1.0;
-        isp *= VelCurveIsp?.Evaluate((float)mach) ?? 1.0;
-        isp *= TemperatureIspCurve?.Evaluate((float)ExhaustTemperature) ?? 1.0;
-        Isp = isp;
-        SFC = 3600d / Isp;
-    }
-
-    public void CalculateFuelFlow(double throttle, double flowMult)
-    {
-        flowMult *= AtmCurve?.Evaluate((float)(rho * (1.0 / 1.225))) ?? 1.0;
-        flowMult *= VelCurve?.Evaluate((float)mach) ?? 1.0;
-
-        if (flowMult > FlowMultCap)
-        {
-            double diff = flowMult - FlowMultCap;
-            flowMult = FlowMultCap + diff / (FlowMultCapSharpness + diff / FlowMultCap);
-        }
-
-        fuelFlow = Math.Max(flowMult, 1e-5) * MaxFuelFlow * throttle;
-    }
-
-    public void CalculateExhaustTemperature()
-    {
-        ExhaustTemperature = UtilMath.Lerp(
-            MixtureInitialTemperature,
-            HeatModule.LoopTemperature,
-            HeatTransferEfficiency
-        );
-    }
-
-    public void CalculateThrust()
-    {
-        thrust = Isp * G * fuelFlow;
-    }
-
-    public void CalculateLoopFlux()
-    {
-        var flux =
-            (MixtureInitialTemperature - ExhaustTemperature)
-            * fuelFlow
-            * MixtureSpecificHeatCapacity;
-        flux += fuelFlow * MixtureVaporizationCost;
-
-        LoopFlux = flux;
-    }
-
-    double GetThrottlingMult(double atm, double throttle)
-    {
-        if (ThrottleIspCurve is null || ThrottleIspCurveAtmStrength is null)
-            return 1.0;
-        return UtilMath.Lerp(
-            1.0,
-            ThrottleIspCurve.Evaluate((float)atm),
-            ThrottleIspCurveAtmStrength.Evaluate((float)throttle)
-        );
-    }
-
-    public void SetPropellantInfo(
-        List<Propellant> propellants,
-        List<ThermalPropellant> thermalPropellants
-    )
-    {
-        double totalMass = 0.0;
-        double weightedTemp = 0.0;
-        double weightedSHC = 0.0;
-        double weightedVap = 0.0;
-
-        var count = Math.Min(propellants.Count, thermalPropellants.Count);
-        for (int i = 0; i < count; ++i)
-        {
-            var prop = propellants[i];
-            var tp = thermalPropellants[i];
-
-            var mass = prop.resourceDef.density;
-
-            totalMass += mass;
-            weightedTemp += mass * tp.temperature;
-            weightedSHC += mass * tp.specificHeatCapacity;
-            weightedVap += mass * tp.vaporizationCost;
-        }
-
-        if (totalMass != 0.0)
-        {
-            MixtureInitialTemperature = weightedTemp / totalMass;
-            MixtureSpecificHeatCapacity = weightedSHC / totalMass;
-            MixtureVaporizationCost = weightedVap / totalMass;
-        }
-        else
-        {
-            MixtureInitialTemperature = 0.0;
-            MixtureSpecificHeatCapacity = 0.0;
-            MixtureVaporizationCost = 0.0;
-        }
-    }
-}
-
 [HarmonyPatch]
 public class ModuleThermalEngine : ModuleEnginesSolver
 {
@@ -318,34 +120,7 @@ public class ModuleThermalEngine : ModuleEnginesSolver
         moduleID ??= EngineID;
         HeatModule ??= ModuleUtils.FindHeatModule(part, systemHeatModuleID);
 
-        var solver = new ThermalEngineSolver()
-        {
-            HeatModule = HeatModule,
-            ModuleID = moduleID,
-
-            HeatTransferEfficiency = heatTransferEfficiency,
-            MinOperatingTemperature = minOperatingTemperature,
-            MaxOperatingTemperature = maxOperatingTemperature,
-
-            TemperatureIspCurve = temperatureIspCurve,
-            AtmosphereCurve = atmosphereCurve,
-            AtmCurve = useAtmCurve ? atmCurve : null,
-            AtmCurveIsp = useAtmCurveIsp ? atmCurveIsp : null,
-            VelCurve = useVelCurve ? velCurve : null,
-            VelCurveIsp = useVelCurveIsp ? velCurveIsp : null,
-            ThrottleIspCurve = useThrottleIspCurve ? throttleIspCurve : null,
-            ThrottleIspCurveAtmStrength = useThrottleIspCurve ? throttleIspCurveAtmStrength : null,
-
-            DisableUnderwater = disableUnderwater,
-            MaxFuelFlow = maxFuelFlow,
-            MinFuelFlow = minFuelFlow,
-            FlowMultCap = flowMultCap,
-            FlowMultCapSharpness = flowMultCapSharpness,
-        };
-
-        solver.SetPropellantInfo(propellants, thermalPropellants);
-
-        engineSolver = solver;
+        engineSolver = new ThermalEngineSolver(this);
     }
 
     public override void OnAwake()
@@ -384,11 +159,11 @@ public class ModuleThermalEngine : ModuleEnginesSolver
                 return;
 
             solver.fuelFlow = solver.MaxFuelFlow;
-            solver.CalculateExhaustTemperature();
+            solver.ExhaustTemperature = solver.ComputeExhaustTemperature();
+            solver.LoopFlux = solver.ComputeLoopFlux();
             solver.running = solver.LoopFlux != 0.0 && solver.ExhaustTemperature != 0.0;
         }
 
-        solver.CalculateLoopFlux();
         HeatModule.AddFlux(
             moduleID,
             (float)Math.Max(solver.ExhaustTemperature, 1.0),
