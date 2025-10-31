@@ -172,14 +172,6 @@ public class ModuleThermalEngine : ModuleEnginesSolver
         );
     }
 
-    public override void UpdateThrottle()
-    {
-        // We actually want the default throttle behaviour here so we use a
-        // harmony reverse patch to ensure it actually gets called.
-        ModuleEngines_UpdateThrottle(this);
-        base.UpdateThrottle();
-    }
-
     static FloatCurve DefaultTempIspCurve()
     {
         var fc = new FloatCurve();
@@ -218,27 +210,5 @@ public class ModuleThermalEngine : ModuleEnginesSolver
             return [];
 
         return prefab.thermalPropellants;
-    }
-
-    [HarmonyReversePatch]
-    [HarmonyPatch(typeof(ModuleThermalEngine), nameof(ModuleEngines_UpdateThrottle))]
-    static void ModuleEngines_UpdateThrottle(ModuleEngines engines)
-    {
-#pragma warning disable CS8321 // Local function is declared but never used
-        static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> _)
-        {
-            return
-            [
-                new CodeInstruction(OpCodes.Ldarg_0),
-                new CodeInstruction(
-                    OpCodes.Call,
-                    SymbolExtensions.GetMethodInfo<ModuleEngines>(eng => eng.UpdateThrottle())
-                ),
-                new CodeInstruction(OpCodes.Ret),
-            ];
-        }
-#pragma warning restore CS8321 // Local function is declared but never used
-
-        throw new NotImplementedException();
     }
 }
