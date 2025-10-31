@@ -7,7 +7,7 @@ using KSP.Localization;
 using SystemHeat;
 using UnityEngine;
 
-namespace SystemHeatExtensions;
+namespace SystemHeatExpansion;
 
 /// <summary>
 /// A module that decays resources on contained within the current part. You can

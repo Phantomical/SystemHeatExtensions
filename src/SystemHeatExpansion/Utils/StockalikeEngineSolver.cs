@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using KSP.Localization;
 using SolverEngines;
 
-namespace SystemHeatExtensions.Utils;
+namespace SystemHeatExpansion.Utils;
 
 /// <summary>
 /// This is an engine solver that is designed to work almost exactly like the

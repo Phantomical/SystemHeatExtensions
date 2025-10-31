@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Description>Use engines in time warp or in the background</Description>
+    <Description>Expansion modules for SystemHeat</Description>
 
     <KSPBinaryType>binary</KSPBinaryType>
   </PropertyGroup>
@@ -38,13 +38,13 @@
     </Reference>
 
     <KSPVersionFile Include=".">
-      <Destination>$(GameDataOutDir)/SystemHeatExtensions.version</Destination>
+      <Destination>$(GameDataOutDir)/SystemHeatExpansion.version</Destination>
       <URL>
-        https://github.com/Phantomical/SystemHeatExtensions/releases/latest/download/SystemHeatExtensions.version</URL>
-      <Download>https://github.com/Phantomical/SystemHeatExtensions/releases/latest</Download>
+        https://github.com/Phantomical/SystemHeatExpansion/releases/latest/download/SystemHeatExpansion.version</URL>
+      <Download>https://github.com/Phantomical/SystemHeatExpansion/releases/latest</Download>
     </KSPVersionFile>
 
-    <InternalsVisibleTo Include="SystemHeatExtensions.Kerbalism" />
+    <InternalsVisibleTo Include="SystemHeatExpansion.Kerbalism" />
   </ItemGroup>
 
   <ItemGroup>

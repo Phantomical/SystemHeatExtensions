@@ -4,7 +4,7 @@ using System.Reflection;
 using Experience.Effects;
 using SolverEngines;
 
-namespace SystemHeatExtensions.Utils;
+namespace SystemHeatExpansion.Utils;
 
 public abstract class ModuleStockalikeSolverEngines : ModuleEnginesSolver
 {

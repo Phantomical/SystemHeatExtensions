@@ -7,7 +7,7 @@ using SolverEngines;
 using SystemHeat;
 using UnityEngine;
 
-namespace SystemHeatExtensions;
+namespace SystemHeatExpansion;
 
 /// <summary>
 /// Thermal information about a propellant. This will be loaded from the

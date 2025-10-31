@@ -1,7 +1,7 @@
 using System;
 using SystemHeat;
 
-namespace SystemHeatExtensions;
+namespace SystemHeatExpansion;
 
 /// <summary>
 /// This module exchanges heat between a SystemHeat loop and optionally, either

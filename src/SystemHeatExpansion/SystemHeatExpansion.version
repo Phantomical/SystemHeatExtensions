@@ -1,10 +1,10 @@
 {
-    "NAME": "SystemHeatExtensions",
-    "URL": "https://github.com/Phantomical/SystemHeatExtensions/releases/latest/download/SystemHeatExtensions.version",
-    "DOWNLOAD": "https://github.com/Phantomical/SystemHeatExtensions/releases",
+    "NAME": "SystemHeatExpansion",
+    "URL": "https://github.com/Phantomical/SystemHeatExpansion/releases/latest/download/SystemHeatExpansion.version",
+    "DOWNLOAD": "https://github.com/Phantomical/SystemHeatExpansion/releases",
     "GITHUB": {
         "USERNAME": "Phantomical",
-        "REPOSITORY": "SystemHeatExtensions"
+        "REPOSITORY": "SystemHeatExpansion"
     },
     "VERSION": {},
     "KSP_VERSION": {

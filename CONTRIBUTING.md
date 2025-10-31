@@ -32,7 +32,7 @@ installs under `deps/installs` and install the relevant mods within.
 In order to build the mod you will need:
 - the `dotnet` CLI
 
-Next, you will want to create a `SystemHeatExtensions.props.user` file
+Next, you will want to create a `SystemHeatExpansion.props.user` file
 in the repository root, like this one:
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -51,7 +51,7 @@ Finally, you can build by running either:
 - `dotnet build` (for a debug build), or,
 - `dotnet build -c Release` (for a release build)
 
-This will create a `GameData\SystemHeatExtensions` folder which you can then drop
+This will create a `GameData\SystemHeatExpansion` folder which you can then drop
 into your KSP install's `GameData` folder.
 
 > ### Linking the output into your `GameData` folder
@@ -63,7 +63,7 @@ into your KSP install's `GameData` folder.
 > To do this you will need to run the following command in an admin `cmd.exe`
 > prompt (for windows) in your `GameData` directory:
 > ```batch
-> mklink /j SystemHeatExtensions C:\path\to\SystemHeatExtensions\repo\GameData\SystemHeatExtensions
+> mklink /j SystemHeatExpansion C:\path\to\SystemHeatExpansion\repo\GameData\SystemHeatExpansion
 > ```
 >
 > On Linux or MacOS you should be able to accomplish the same thing using `ln`.

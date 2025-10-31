@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using KSP.Localization;
 using SystemHeat;
-using SystemHeatExtensions.Utils;
+using SystemHeatExpansion.Utils;
 
-namespace SystemHeatExtensions;
+namespace SystemHeatExpansion;
 
 public class ThermalEngineSolver : StockalikeEngineSolver
 {
