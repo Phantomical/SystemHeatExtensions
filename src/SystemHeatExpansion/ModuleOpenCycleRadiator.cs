@@ -1,10 +1,12 @@
-using EdyCommonTools;
 using KSP.Localization;
 using SystemHeat;
-using UnityEngine.Video;
+using TMPro;
 
 namespace SystemHeatExpansion;
 
+/// <summary>
+/// A module that removes heat by heating up a coolant and dumping it overboard.
+/// </summary>
 [KSPModule("#LOC_SHX_ModuleSHXOpenCycleRadiator_ModuleName")]
 public class ModuleSHXOpenCycleRadiator : PartModule
 {
@@ -73,6 +75,13 @@ public class ModuleSHXOpenCycleRadiator : PartModule
     /// </summary>
     [KSPField]
     public double coolantTemperature = 0d;
+
+    /// <summary>
+    /// Specifies that the coolant temperature is the outside temperature
+    /// instead of a specific fixed temperature.
+    /// </summary>
+    [KSPField]
+    public bool coolantIsAtmosphereTemperature = false;
 
     /// <summary>
     /// The minimum operating temperature of this radiator. If the loop
@@ -252,6 +261,25 @@ public class ModuleSHXOpenCycleRadiator : PartModule
         UpdateStatus();
     }
 
+    public virtual double GetCoolantTemperature()
+    {
+        if (coolantIsAtmosphereTemperature)
+        {
+            if (HighLogic.LoadedSceneIsEditor)
+            {
+                return vessel
+                        ?.FindVesselModuleImplementing<SystemHeatVessel>()
+                        ?.Simulator?.AtmoSim?.ExternalTemperature ?? 3d;
+            }
+            else
+            {
+                return vessel.atmosphericTemperature;
+            }
+        }
+
+        return coolantTemperature;
+    }
+
     public virtual void FixedUpdate()
     {
         ExhaustTemperature = 0.0;
@@ -275,13 +303,14 @@ public class ModuleSHXOpenCycleRadiator : PartModule
             return;
 
         var efficiency = heatTransferEfficiencyCurve.Evaluate(HeatModule.LoopTemperature);
+        var coolantTemp = GetCoolantTemperature();
         ExhaustTemperature = UtilMath.LerpUnclamped(
-            coolantTemperature,
+            coolantTemp,
             HeatModule.LoopTemperature,
             efficiency
         );
 
-        var diff = ExhaustTemperature - coolantTemperature;
+        var diff = ExhaustTemperature - coolantTemp;
         var shc = (double)coolantSpecificHeatCapacityCurve.Evaluate((float)ExhaustTemperature);
 
         // Scale coolant usage down when just above the loop nominal temperature.
@@ -308,7 +337,7 @@ public class ModuleSHXOpenCycleRadiator : PartModule
         }
 
         var flux = (diff * shc + coolantVaporizationCost) * rate;
-        HeatModule.AddFlux(moduleID, (float)coolantTemperature, -(float)flux, useForNominal: false);
+        HeatModule.AddFlux(moduleID, (float)coolantTemp, -(float)flux, useForNominal: false);
         CoolantFlowFraction = rate / coolantMassFlow;
     }
 
