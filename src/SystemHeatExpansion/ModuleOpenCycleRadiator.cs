@@ -1,6 +1,7 @@
 using EdyCommonTools;
 using KSP.Localization;
 using SystemHeat;
+using UnityEngine.Video;
 
 namespace SystemHeatExpansion;
 
@@ -130,7 +131,7 @@ public class ModuleSHXOpenCycleRadiator : PartModule
     /// waterfall controllers.
     /// </summary>
     [KSPField]
-    public double CoolantFlow;
+    public double CoolantFlowFraction;
     #endregion
 
     #region UI Fields
@@ -254,7 +255,7 @@ public class ModuleSHXOpenCycleRadiator : PartModule
     public virtual void FixedUpdate()
     {
         ExhaustTemperature = 0.0;
-        CoolantFlow = 0.0;
+        CoolantFlowFraction = 0.0;
 
         if (HeatModule is null || coolant is null)
             return;
@@ -288,15 +289,8 @@ public class ModuleSHXOpenCycleRadiator : PartModule
         if (loopTemp < nominalTemp + flowScaleRange)
             mult = (loopTemp - nominalTemp) / flowScaleRange;
 
-        double density;
-        if (ignoreCoolantDensity || coolant.density == 0.0)
-            density = 1.0;
-        else if (double.IsInfinity(coolant.density) || double.IsNaN(coolant.density))
-            density = 1.0;
-        else
-            density = coolant.density;
-
         double rate;
+        double density = GetCoolantDensity();
         double requested = coolantMassFlow * mult * (flowLimitPercentage * 0.01);
         if (HighLogic.LoadedSceneIsFlight)
         {
@@ -315,7 +309,7 @@ public class ModuleSHXOpenCycleRadiator : PartModule
 
         var flux = (diff * shc + coolantVaporizationCost) * rate;
         HeatModule.AddFlux(moduleID, (float)coolantTemperature, -(float)flux, useForNominal: false);
-        CoolantFlow = rate / density;
+        CoolantFlowFraction = rate / coolantMassFlow;
     }
 
     public virtual void Update()
@@ -323,10 +317,12 @@ public class ModuleSHXOpenCycleRadiator : PartModule
         if (!part.IsPAWVisible())
             return;
 
-        var flow = CoolantFlow < 0.1 ? CoolantFlow.ToString("G8") : CoolantFlow.ToString("F2");
+        var density = GetCoolantDensity();
+        var flow = CoolantFlowFraction * coolantMassFlow / density;
+        var flowUI = flow < 0.1 ? flow.ToString("G8") : flow.ToString("F2");
         CoolantFlowUI = Localizer.Format(
             "#LOC_SHX_ModuleSHXOpenCycleRadiator_CoolantFlow_Fmt",
-            flow,
+            flowUI,
             coolant.abbreviation
         );
     }
@@ -352,6 +348,18 @@ public class ModuleSHXOpenCycleRadiator : PartModule
         var flux = (diff * shc + coolantVaporizationCost) * rate;
 
         return flux;
+    }
+
+    double GetCoolantDensity()
+    {
+        if (ignoreCoolantDensity)
+            return 1.0;
+        if (coolant is null)
+            return 1.0;
+        if (coolant.density == 0.0)
+            return 1.0;
+
+        return coolant.density;
     }
 
     public override void OnLoad(ConfigNode node)
