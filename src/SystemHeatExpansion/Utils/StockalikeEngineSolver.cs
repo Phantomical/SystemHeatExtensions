@@ -259,6 +259,6 @@ public class StockalikeEngineSolver : EngineSolver
     }
 
     private static readonly string FuelDeprived = Localizer.GetStringByTag(
-        "#LOC_SHX_StockalikeEngine_FuelDeprived"
+        "#LOC_SHX_Engine_FuelDeprived"
     );
 }

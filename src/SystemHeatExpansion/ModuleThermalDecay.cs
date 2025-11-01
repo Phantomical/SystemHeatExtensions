@@ -13,6 +13,7 @@ namespace SystemHeatExpansion;
 /// A module that decays resources on contained within the current part. You can
 /// use it to cause thermal decay or to have the resource produce waste heat.
 /// </summary>
+[KSPModule("#LOC_SHX_ModuleSHXThermalDecay_ModuleName")]
 public class ModuleSHXThermalDecay : PartModule
 {
     /// <summary>
@@ -100,7 +101,7 @@ public class ModuleSHXThermalDecay : PartModule
     /// A unique identifier for this module on the current part.
     /// </summary>
     [KSPField]
-    public string moduleID = "ModuleThermalDecay";
+    public string moduleID = "ModuleSHXThermalDecay";
 
     /// <summary>
     /// This should correspond to the related ModuleSystemHeat. If not specified,
