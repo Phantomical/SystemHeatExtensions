@@ -1,6 +1,7 @@
+using System;
 using KSP.Localization;
 using SystemHeat;
-using TMPro;
+using SystemHeatExpansion.Utils;
 
 namespace SystemHeatExpansion;
 
@@ -37,6 +38,7 @@ public class ModuleSHXOpenCycleRadiator : PartModule
     /// <summary>
     /// The coolant resource definition.
     /// </summary>
+    [NonSerialized]
     public PartResourceDefinition coolant;
 
     /// <summary>
@@ -104,13 +106,6 @@ public class ModuleSHXOpenCycleRadiator : PartModule
     /// </summary>
     [KSPField]
     public FloatCurve heatTransferEfficiencyCurve = DefaultEfficiencyCurve();
-
-    /// <summary>
-    /// When just above the nominal temperature this radiator will scale down
-    /// resource usage. This field indicates how wide that range should be.
-    /// </summary>
-    [KSPField]
-    public double flowScaleRange = 25d;
 
     /// <summary>
     /// Ignore the density of the coolant and instead treat all coolant values
@@ -236,6 +231,8 @@ public class ModuleSHXOpenCycleRadiator : PartModule
     }
     #endregion
 
+    LoopController Controller = new();
+
     public override string GetModuleDisplayName()
     {
         return Localizer.GetStringByTag("#LOC_SHX_ModuleSHXOpenCycleRadiator_GroupDisplayName");
@@ -257,6 +254,11 @@ public class ModuleSHXOpenCycleRadiator : PartModule
     public override void OnStart(StartState state)
     {
         HeatModule ??= ModuleUtils.FindHeatModule(part, systemHeatModuleID);
+
+        if (coolantName != null)
+            coolant ??= PartResourceLibrary.Instance.resourceDefinitions[coolantName];
+
+        Controller.ScaleEstimate = Math.Abs(CalculateFluxAt(maxOperatingTemperature));
 
         UpdateStatus();
     }
@@ -314,13 +316,12 @@ public class ModuleSHXOpenCycleRadiator : PartModule
         var shc = (double)coolantSpecificHeatCapacityCurve.Evaluate((float)ExhaustTemperature);
 
         // Scale coolant usage down when just above the loop nominal temperature.
-        var mult = 1.0;
-        if (loopTemp < nominalTemp + flowScaleRange)
-            mult = (loopTemp - nominalTemp) / flowScaleRange;
+        var dt = HighLogic.LoadedSceneIsEditor ? HeatModule.Loop.timeStep : TimeWarp.fixedDeltaTime;
+        var control = Controller.Update(HeatModule.Loop, dt);
 
         double rate;
         double density = GetCoolantDensity();
-        double requested = coolantMassFlow * mult * (flowLimitPercentage * 0.01);
+        double requested = coolantMassFlow * control * (flowLimitPercentage * 0.01);
         if (HighLogic.LoadedSceneIsFlight)
         {
             var amount = part.RequestResource(
@@ -337,7 +338,13 @@ public class ModuleSHXOpenCycleRadiator : PartModule
         }
 
         var flux = (diff * shc + coolantVaporizationCost) * rate;
-        HeatModule.AddFlux(moduleID, (float)coolantTemp, -(float)flux, useForNominal: false);
+        HeatModule.AddFlux(
+            moduleID,
+            (float)coolantTemp,
+            -(float)flux,
+            useForNominal: HeatModule.Loop.NominalTemperature
+                <= Math.Max(minOperatingTemperature, coolantTemp)
+        );
         CoolantFlowFraction = rate / coolantMassFlow;
     }
 
@@ -396,7 +403,7 @@ public class ModuleSHXOpenCycleRadiator : PartModule
         base.OnLoad(node);
 
         if (coolantName != null)
-            coolant = PartResourceLibrary.Instance?.resourceDefinitions?[coolantName];
+            coolant = PartResourceLibrary.Instance.resourceDefinitions[coolantName];
     }
 
     static FloatCurve DefaultEfficiencyCurve()
