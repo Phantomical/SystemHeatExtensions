@@ -17,7 +17,7 @@ namespace SystemHeatExpansion.Utils;
 /// matter how many other controllers there are doing the same thing in the
 /// loop.
 /// </summary>
-public struct LoopController()
+public struct FluxController()
 {
     static readonly double Kp = 0.5;
     static readonly double Kd = 0.1;
@@ -84,6 +84,8 @@ public struct LoopController()
 
         double error = GetError();
         double scale = GetScaleEstimate(error);
+        if (scale == 0.0)
+            scale = 1.0;
 
         var p = Kp * error / scale;
         var d = Kd * (error - LastError) / scale / dt;
@@ -97,21 +99,22 @@ public struct LoopController()
         return c;
     }
 
+    static double ErrMult = 1.0;
+    static double ErrScale = 100.0;
+
     readonly double GetError()
     {
         if (Loop is null)
             return 0.0;
 
+        double tdiff = (Loop.Temperature - Loop.NominalTemperature) * ErrScale;
+        double error = Loop.NetFlux + tdiff;
+        error *= ErrMult;
+
         if (IsConsumer)
-        {
-            double tdiff = Math.Max(Loop.Temperature - Loop.NominalTemperature, 0.0) * 10.0;
-            return Loop.NetFlux + tdiff;
-        }
+            return error;
         else
-        {
-            double tdiff = Math.Max(Loop.NominalTemperature - Loop.Temperature, 0.0) * 10.0;
-            return -Loop.NetFlux + tdiff;
-        }
+            return -error;
     }
 
     double GetScaleEstimate(double error)

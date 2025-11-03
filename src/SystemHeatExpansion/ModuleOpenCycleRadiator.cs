@@ -231,7 +231,7 @@ public class ModuleSHXOpenCycleRadiator : PartModule
     }
     #endregion
 
-    LoopController Controller = new();
+    FluxController Controller = new();
 
     public override string GetModuleDisplayName()
     {
@@ -317,7 +317,9 @@ public class ModuleSHXOpenCycleRadiator : PartModule
 
         // Scale coolant usage down when just above the loop nominal temperature.
         var dt = HighLogic.LoadedSceneIsEditor ? HeatModule.Loop.timeStep : TimeWarp.fixedDeltaTime;
-        var control = Controller.Update(HeatModule.Loop, dt);
+        double control = 1.0;
+        if (HeatModule.LoopTemperature < HeatModule.Loop.NominalTemperature + 10.0)
+            control = Controller.Update(HeatModule.Loop, dt);
 
         double rate;
         double density = GetCoolantDensity();

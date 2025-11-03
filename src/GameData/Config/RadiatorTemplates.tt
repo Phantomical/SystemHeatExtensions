@@ -1,0 +1,127 @@
+<#@ output extension=".cfg" #>
+<#
+// Writing patches for resource templates would require too much copy-paste for
+// me. This template takes care of the module manager scaffolding instead,
+// allowing us to just write the template itself.
+//
+// To declare a new template you just need to wrap it with
+//  < # DeclareTemplate("Resource", () => { # >
+//  .. add template here
+//  < # }); # >
+//
+// In order to build the resulting config file should run
+//
+//  dotnet t4 src/GameData/Config/RadiatorTemplates.tt
+//
+// You will need to run `dotnet tool restore` first in order to make the
+// dotnet-t4 command available locally.
+
+WriteLine("// This is a generated file. Edit the template instead.");
+#>
+
+// Common templates for ModuleSHXOpenCycleRadiator
+//
+// Generally, open-cycle radiator definitions for radiators using the same
+// resource will share a bunch of similar config values. This file provides
+// a set of templates that can be used in order to easily use one of the
+// presets for a resource.
+
+<#DeclareTemplate("LqdHydrogen", () => { #>
+&coolantName = LqdHydrogen
+
+// What temperature is the coolant?
+//
+// Hydrogen is liquid between 14K and 20.3K, so this is a value on the
+// colder side which means it is a little bit more effective.
+&coolantTemperature = 15
+
+// How much energy does it take to vaporize the coolant?
+//
+// 0.904 kJ/mol * 495 mol/kg = 447.41 kJ/kg -> 447480 kJ/t
+&coolantVaporizationCost = 447480
+
+// How much energy per degree does it take, on average, to raise the
+// coolant temperature to the specified exhaust temperature?
+&coolantSpecificHeatCapacityCurve
+{
+  // 12 kJ/kg -> 12000 kJ/t
+  key = 0     12000
+  key = 175   13120
+  key = 1000  14980
+  key = 1500  16020
+  key = 2000  17010
+  key = 3000  18390
+  key = 6000  20960
+}
+<#});#>
+
+<#DeclareTemplate("Water", () => {#>
+&coolantName = Water
+
+// 10°C
+&coolantTemperature = 283
+
+// 2260 kJ/kg -> 2260000 kJ/t
+&coolantVaporizationCost = 2260000
+
+&coolantSpecificHeatCapacityCurve
+{
+  // 4.22 kJ/kg/K -> 42200 kJ/kg/K
+  key = 273.15 42200
+  key = 373.15 42200
+}
+<#});#>
+
+
+<#+
+void DeclareTemplate(string name, Action action)
+{
+    // We need to declare the config values multiple times in the MM patch, but
+    // manually copy-pasting is error prone. This wraps things up so that's not
+    // necessary.
+
+    // The regular patch is pretty straightforward.
+    WriteLine($"@PART:HAS[@MODULE[ModuleSHXOpenCycleRadiator]:HAS[#coolantTemplate[{name}]]]:FOR[SystemHeatExpansion]");
+    WriteLine("{");
+    WriteLine($"  @MODULE[ModuleSHXOpenCycleRadiator]:HAS[#coolantTemplate[{name}]]");
+    WriteLine("  {");
+    PushIndent("    ");
+    WriteLine("!coolantTemplate = delete");
+    
+    action();
+
+    ClearIndent();
+    WriteLine("  }");
+    WriteLine("}");
+    WriteLine("");
+
+    string data = $"@DATA:HAS[#coolantTemplate[{name}]]";
+    string smod = $"@MODULE:HAS[@IDENTIFIER[ModuleSHXOpenCycleRadiator],{data}]";
+    string subt = $"@SUBTYPE:HAS[{smod}]";
+    string mod  = $"@MODULE[ModuleB9PartSwitch]:HAS[{subt}]";
+    string part = $"@PART:HAS[@MODULE[ModuleSHXOpenCycleRadiator],{mod}]:FOR[SystemHeatExpansion]:NEEDS[B9PartSwitch]";
+
+    // The B9PS version of the patch selector is somewhat horrifying
+    WriteLine($"{part}");
+    WriteLine("{");
+    WriteLine($"  {mod}");
+    WriteLine("  {");
+    WriteLine($"    {subt}");
+    WriteLine("    {");
+    WriteLine($"      {smod}");
+    WriteLine("      {");
+    WriteLine($"        {data}");
+    WriteLine("        {");
+    PushIndent("          ");
+    WriteLine("!coolantTemplate = delete");
+
+    action();
+    
+    ClearIndent();
+    WriteLine("        }");
+    WriteLine("      }");
+    WriteLine("    }");
+    WriteLine("  }");
+    WriteLine("}");
+}
+#>

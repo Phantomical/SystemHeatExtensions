@@ -64,6 +64,21 @@ public class ModuleSHXHeatEngine : PartModule
     /// </summary>
     [KSPField]
     public float maxInletTemperature = 4000f;
+
+    /// <summary>
+    /// The minimum difference between the inlet and outlet temperatures in
+    /// order for the generator to work.
+    /// </summary>
+    [KSPField]
+    public float minOperatingDifference = 100f;
+
+    /// <summary>
+    /// If the temperature difference is less than this value we'll scale down
+    /// the amount of power that we are transferring. This prevents flickering
+    /// in the reactor PAW.
+    /// </summary>
+    [KSPField]
+    public double hysterisisRange = 25.0;
     #endregion
 
     #region UI Fields
@@ -174,15 +189,13 @@ public class ModuleSHXHeatEngine : PartModule
     public virtual void ToggleAction(KSPActionParam _) => Toggle();
     #endregion
 
-    private LoopController Controller = new();
-
     public ModuleSystemHeat SrcModule => ToggleSource ? HeatModule2 : HeatModule1;
     public ModuleSystemHeat DstModule => ToggleSource ? HeatModule1 : HeatModule2;
     public float Limit => LimitPercentage * 0.01f;
 
     protected virtual void UpdateStatus()
     {
-        bool changed = Events["Enable"].active != Enabled;
+        bool changed = Events["Enable"].active == Enabled;
         Events["Enable"].active = !Enabled;
         Events["Disable"].active = Enabled;
 
@@ -217,8 +230,6 @@ public class ModuleSHXHeatEngine : PartModule
         HeatModule1 = ModuleUtils.FindHeatModule(part, systemHeatModuleID1);
         HeatModule2 = ModuleUtils.FindHeatModule(part, systemHeatModuleID2);
 
-        Controller.ScaleEstimate = heatRate * Limit;
-
         var toggle = HighLogic.LoadedSceneIsEditor
             ? (UI_Toggle)Fields[nameof(ToggleSource)].uiControlEditor
             : (UI_Toggle)Fields[nameof(ToggleSource)].uiControlFlight;
@@ -236,11 +247,6 @@ public class ModuleSHXHeatEngine : PartModule
             minOutletTemperature,
             maxInletTemperature
         );
-
-        var limit = HighLogic.LoadedSceneIsEditor
-            ? (UI_FloatRange)Fields[nameof(LimitPercentage)].uiControlEditor
-            : (UI_FloatRange)Fields[nameof(LimitPercentage)].uiControlFlight;
-        limit.onFieldChanged = (a, b) => OnLimitUpdate();
 
         UpdateStatus();
     }
@@ -264,28 +270,28 @@ public class ModuleSHXHeatEngine : PartModule
             return;
         }
 
-        if (outletTemperature >= inletTemperature)
+        if (outletTemperature + minOperatingDifference >= inletTemperature)
         {
             ClearFlux();
             return;
         }
 
-        if (!Controller.IsSetup)
-            Controller.Setup(SrcModule.Loop);
-
-        var dt = HighLogic.LoadedSceneIsEditor ? SrcModule.Loop.timeStep : TimeWarp.fixedDeltaTime;
-        var control = Controller.Update(SrcModule.Loop, dt);
+        var mult = UtilMath.Clamp01(
+            (inletTemperature - outletTemperature - minOperatingDifference) / hysterisisRange
+        );
         var carnotEff = 1.0 - outletTemperature / inletTemperature;
-        var rate = heatRate * Limit * control;
-        var power = carnotEff * efficiency * rate;
+        var rate = heatRate * Limit * mult;
+        var power = Math.Abs(SrcModule.consumedSystemFlux) * carnotEff * efficiency;
 
-        SrcModule.AddFlux(moduleID, inletTemperature, (float)-rate, useForNominal: false);
+        // Add flux to the dst loop based on how much we actually consumed in the
+        // last frame.
         DstModule.AddFlux(
             moduleID,
             outletTemperature,
-            (float)rate,
+            Math.Abs(SrcModule.consumedSystemFlux),
             useForNominal: DstModule.nominalLoopTemperature <= OutletTemperature
         );
+        SrcModule.AddFlux(moduleID, inletTemperature, (float)-rate, useForNominal: false);
 
         CurrentPower = power;
 
@@ -333,14 +339,6 @@ public class ModuleSHXHeatEngine : PartModule
         );
         toggle.enabledText = text;
         toggle.disabledText = text;
-
-        if (Enabled)
-            Controller.Setup(SrcModule.Loop);
-    }
-
-    void OnLimitUpdate()
-    {
-        Controller.ScaleEstimate = heatRate * Limit;
     }
 
     void ClearFlux()
