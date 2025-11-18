@@ -25,6 +25,68 @@ WriteLine("// This is a generated file. Edit the template instead.");
 // resource will share a bunch of similar config values. This file provides
 // a set of templates that can be used in order to easily use one of the
 // presets for a resource.
+//
+// These are all applied in `FOR[zSystemHeatExpansion]`. Make sure that you
+// set up the template and any relevant B9PS subtypes before that runs.
+//
+// If you want to see notes on defining your own values for a radiator then
+// take a look at the comments in the RadiatorTemplates.tt file sitting next
+// to this one.
+
+<#
+/*
+Defining a Template
+===================
+There are 3 things you need to define when declaring a template:
+1. What is the default resource for the coolant?
+2. What temperature does the coolant start at?
+3. How much energy does it take to change the temperature of the coolant?
+
+The first two are fairly straightforward to specify
+- coolantName = <resource name>
+- coolantTemperature = <temp>
+
+If the coolant is supposed to be brought in from the atmosphere
+(e.g. IntakeAtm or IntakeAir) then you can set
+- coolantIsAtmosphereTemperature = true
+
+The most complicated part is defining the specific enthalpy of the coolant.
+The values in this curve are defined as the amount of energy required to
+heat 1kg of coolant from absolute zero to temperature T.
+
+To make the curve you need to integrate the specific heat capacity from 0
+to t, and build a curve out of that. My general approach for this has been
+to:
+1. Find the NIST webbook page (at webbook.nist.gov) for the relevant
+   chemical and grab the equations for the heat capacity. Make sure to
+   divide the resulting values by the molar mass to convert to J/g/K
+   (which is equivalent to kJ/kg/K).
+2. Find or invent some data that covers the rest of the range.
+3. Find the heat of vaporization (in kJ/kg) and the heat of fusion
+   (if applicable).
+4. Combine all of these into a nasty piecewise equation in mathematica.
+5. Plot f[t] and Integrate[f[x],{x,0,t}] over [0,6000].
+6. The curve values are those of the integral, while the tangents are the
+   derivatives.
+7. Pick spots in the derivative plot that seem to be changing more rapidly
+   and use those to define the points of the curve.
+
+This process is, frankly, a bit of a pain in the ass. However, it does result
+in something that is decently close to being physically correct. If this is
+too much effort, here's a quick-and-dirty way to get something acceptable:
+1. Find SHCs for the solid, liquid, and gas phase of your resource
+2. Find heat of fusion and heat of vaporization, along with the melting and
+   boiling templates.
+3. Define a piecewise function as follows:
+   f(t) = solid SHC * t                                     if t < melting temp
+        + heat of fusion + liquid SHC * (t - melting temp)  if t < boiling temp
+        + heat of vaporization + gas SHC * (t - boil temp)  otherwise
+4. Plug the values for this function in as the curve and then set the curve
+   tangents to the appropriate SHCs at the boiling temp and melting temp.
+5. Make sure to include a small 0.1K gap where you add the heat of fusion and
+   heat of vaporization at the melting and boiling points, respectively.
+*/
+#>
 
 <#DeclareTemplate("LqdHydrogen", () => { #>
 &coolantName = LqdHydrogen
@@ -35,24 +97,26 @@ WriteLine("// This is a generated file. Edit the template instead.");
 // colder side which means it is a little bit more effective.
 &coolantTemperature = 15
 
-// How much energy does it take to vaporize the coolant?
+// How much energy would it take to bring the coolant up to temperature t from
+// 0K, in kJ/kg.
 //
-// 0.904 kJ/mol * 495 mol/kg = 447.41 kJ/kg -> 447480 kJ/t
-&coolantVaporizationCost = 447480
-
-// How much energy per degree does it take, on average, to raise the
-// coolant temperature to the specified exhaust temperature?
-&coolantSpecificHeatCapacityCurve
+// The module always uses the difference between two values, so the absolute
+// values don't matter.
+&coolantSpecificEnthalpyCurve
 {
-  // 12 kJ/kg -> 12000 kJ/t
-  key = 0     12000
-  key = 175   13120
-  key = 1000  14980
-  key = 1500  16020
-  key = 2000  17010
-  key = 3000  18390
-  key = 6000  20960
+  key = 0     0       0     8.1
+  // spread heat of vaporization over 0.1K
+  key = 20.3  164.4   8.1   4470
+  key = 20.4  611     4470  10
+  key = 300   4125.12 14.3  14.3
+  key = 1000  14356   15    15
+  key = 3000  48117   18.3  18.3
+  key = 6000  107442  20.8  20.8
 }
+<#});#>
+
+<#DeclareTemplate("LqdOxygen", () => { #>
+&coolantName = LqdOxygen
 <#});#>
 
 <#DeclareTemplate("Water", () => {#>
@@ -61,16 +125,55 @@ WriteLine("// This is a generated file. Edit the template instead.");
 // 10°C
 &coolantTemperature = 283
 
-// 2260 kJ/kg -> 2260000 kJ/t
-&coolantVaporizationCost = 2260000
-
-&coolantSpecificHeatCapacityCurve
+&coolantSpecificEnthalpyCurve
 {
-  // 4.22 kJ/kg/K -> 42200 kJ/kg/K
-  key = 273.15 42200
-  key = 373.15 42200
+  key = 0     0      0     0.3
+  key = 273.1 309.9  2.05  3342 // melting point
+  key = 273.2 644.1  3342  4.22
+  key = 320   840.2  4.178 4.178
+  key = 373   1062.5 4.217 22604 // boiling point
+  key = 373.1 3322.9 22604 1.889
+  key = 1000  4625.5 2.29  2.29
+  key = 2000  7222.8 2.84  2.84
+  key = 4000  13371  3.22  3.22
+  key = 6000  19962  3.36  3.36
 }
 <#});#>
+
+<#DeclareTemplate("IntakeAir", () => {#>
+// IntakeAir isn't likely to be consistent between different planets.
+// This is modelled after Earth's atmosphere, which should generally be good
+// enough for the purposes for KSP.
+
+&coolantName = IntakeAir
+&coolantIsAtmosphereTemperature = true
+&coolantSpecificEnthalpyCurve
+{
+  key = 0     0     0     1.901
+  key = 78.79 150.1 1.933 1.933
+  key = 81.61 154.3 1.040 1.040
+  key = 300   374.9 1.006 1.006
+  key = 900   1015  1.121 1.121
+  key = 1900  2207  1.241 1.241
+  key = 6000  7947  1.559 1.559
+}
+<#})#>
+
+<#DeclareTemplate("Nitrogen", () => {#>
+&coolantName = Nitrogen
+&coolantTemperature = 70
+&coolantSpecificEnthalpyCurve
+{
+  key = 0     0     0     0.927
+  key = 63.1  79.57 1.665 259.7
+  key = 63.2  105.5 259.7 1.04
+  key = 77.3  120.2 1.04  1991
+  key = 77.4  319.3 1991  1.039
+  key = 500   759.7 1.056 1.056
+  key = 2000  2553  1.284 1.284
+  key = 6000  7897  1.366 1.366
+}
+<#})#>
 
 
 <#+
@@ -81,7 +184,7 @@ void DeclareTemplate(string name, Action action)
     // necessary.
 
     // The regular patch is pretty straightforward.
-    WriteLine($"@PART:HAS[@MODULE[ModuleSHXOpenCycleRadiator]:HAS[#coolantTemplate[{name}]]]:FOR[SystemHeatExpansion]");
+    WriteLine($"@PART:HAS[@MODULE[ModuleSHXOpenCycleRadiator]:HAS[#coolantTemplate[{name}]]]:FOR[zSystemHeatExpansion]");
     WriteLine("{");
     WriteLine($"  @MODULE[ModuleSHXOpenCycleRadiator]:HAS[#coolantTemplate[{name}]]");
     WriteLine("  {");
@@ -99,7 +202,7 @@ void DeclareTemplate(string name, Action action)
     string smod = $"@MODULE:HAS[@IDENTIFIER[ModuleSHXOpenCycleRadiator],{data}]";
     string subt = $"@SUBTYPE:HAS[{smod}]";
     string mod  = $"@MODULE[ModuleB9PartSwitch]:HAS[{subt}]";
-    string part = $"@PART:HAS[@MODULE[ModuleSHXOpenCycleRadiator],{mod}]:FOR[SystemHeatExpansion]:NEEDS[B9PartSwitch]";
+    string part = $"@PART:HAS[@MODULE[ModuleSHXOpenCycleRadiator],{mod}]:FOR[zSystemHeatExpansion]:NEEDS[B9PartSwitch]";
 
     // The B9PS version of the patch selector is somewhat horrifying
     WriteLine($"{part}");
