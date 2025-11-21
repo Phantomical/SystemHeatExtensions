@@ -288,7 +288,7 @@ public class ModuleSHXHeatEngine : PartModule
         DstModule.AddFlux(
             moduleID,
             outletTemperature,
-            Math.Abs(SrcModule.consumedSystemFlux),
+            Math.Abs(SrcModule.GetConsumedModuleFlux(moduleID)),
             useForNominal: DstModule.nominalLoopTemperature <= OutletTemperature
         );
         SrcModule.AddFlux(moduleID, inletTemperature, (float)-rate, useForNominal: false);

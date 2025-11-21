@@ -21,7 +21,7 @@
       <KSPAssemblyVersion>1.0.0</KSPAssemblyVersion>
     </Reference>
 
-    <Reference Include="SystemHeat.dll">
+    <Reference Include="SystemHeat">
       <HintPath>$(DepSet1)\SystemHeat\Plugin\SystemHeat.dll</HintPath>
       <Private>false</Private>
       <CKANIdentifier>SystemHeat</CKANIdentifier>
@@ -49,6 +49,7 @@
 
   <ItemGroup>
     <Publicize Include="Assembly-CSharp" />
+    <Publicize Include="SystemHeat" />
   </ItemGroup>
 
   <!--

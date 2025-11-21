@@ -101,10 +101,12 @@ public class ModuleHeatExchanger : PartModule, IAnalyticTemperatureModifier
         heatModule.AddFlux(moduleID, (float)temp, (float)flux, false);
         if (!HighLogic.LoadedSceneIsEditor)
         {
+            var actualFlux = flux > 0d ? flux : heatModule.GetConsumedModuleFlux(moduleID);
+
             if (heatSource == HeatSource.INTERNAL)
-                part.AddThermalFlux(-flux);
+                part.AddThermalFlux(-actualFlux);
             else
-                part.AddExposedThermalFlux(-flux);
+                part.AddExposedThermalFlux(-actualFlux);
         }
 
         this.flux = flux;

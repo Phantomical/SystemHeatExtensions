@@ -110,7 +110,7 @@ public class ModuleSHXHeatGenerator : PartModule
     public virtual void ToggleAction(KSPActionParam _) => Toggle();
     #endregion
 
-    FluxController Controller;
+    FluxController Controller = new();
 
     static readonly string StatusDisabled = Localizer.Format(
         "#LOC_SHX_ModuleSHXHeatGenerator_Status_Disabled"
@@ -163,7 +163,7 @@ public class ModuleSHXHeatGenerator : PartModule
             var dt = HighLogic.LoadedSceneIsEditor
                 ? HeatModule.Loop.timeStep
                 : TimeWarp.fixedDeltaTime;
-            control = Controller.Update(HeatModule.Loop, dt);
+            control = Controller.Update(HeatModule.Loop, vessel, dt);
         }
 
         double frac = 1.0;
