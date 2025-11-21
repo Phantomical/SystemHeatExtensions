@@ -1,4 +1,5 @@
 using System;
+using Expansions.Missions.Editor;
 using SystemHeat;
 
 namespace SystemHeatExpansion.Utils;
@@ -17,12 +18,13 @@ namespace SystemHeatExpansion.Utils;
 /// matter how many other controllers there are doing the same thing in the
 /// loop.
 /// </summary>
-public struct FluxController()
+public class FluxController()
 {
     static readonly double Kp = 0.5;
     static readonly double Kd = 0.1;
 
     HeatLoop Loop;
+    SystemHeatExpansionVessel VesselModule;
 
     double LastError = 0.0;
     double Control0 = 0.0;
@@ -41,10 +43,10 @@ public struct FluxController()
     /// </summary>
     public bool IsConsumer = true;
 
-    public readonly bool IsSetup => Loop is not null;
-    public readonly double Current => IsSetup ? Control1 : 0.0;
+    public bool IsSetup => Loop is not null;
+    public double Current => IsSetup ? Control1 : 0.0;
 
-    public void Setup(HeatLoop loop)
+    public void Setup(HeatLoop loop, Vessel vessel)
     {
         if (loop is null)
         {
@@ -67,6 +69,7 @@ public struct FluxController()
 
         LastError = GetError();
         Loop = loop;
+        VesselModule = vessel?.FindVesselModuleImplementing<SystemHeatExpansionVessel>();
     }
 
     public void Clear()
@@ -74,10 +77,10 @@ public struct FluxController()
         Loop = null;
     }
 
-    public double Update(HeatLoop loop, double dt)
+    public double Update(HeatLoop loop, Vessel vessel, double dt)
     {
         if (!ReferenceEquals(Loop, loop))
-            Setup(loop);
+            Setup(loop, vessel);
 
         if (Loop is null)
             return 0.0;
@@ -102,13 +105,14 @@ public struct FluxController()
     static double ErrMult = 1.0;
     static double ErrScale = 100.0;
 
-    readonly double GetError()
+    double GetError()
     {
         if (Loop is null)
             return 0.0;
 
+        double netUsefulFlux = VesselModule?.GetNetUsefulFlux(Loop.ID) ?? Loop.NetFlux;
         double tdiff = (Loop.Temperature - Loop.NominalTemperature) * ErrScale;
-        double error = Loop.NetFlux + tdiff;
+        double error = netUsefulFlux + tdiff;
         error *= ErrMult;
 
         if (IsConsumer)
